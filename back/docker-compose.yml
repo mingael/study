@@ -1,0 +1,60 @@
+version: "3"
+services:
+  mysql:
+    container_name: back-mysql
+    image: mysql:8
+    volumes:
+      - ./mysql/data:/var/lib/mysql:rw
+    command: ["mysqld","--character-set-server=utf8mb4","--collation-server=utf8mb4_unicode_ci"]
+    environment:
+      MYSQL_DATABASE: mysql_db
+      MYSQL_USER: back
+      MYSQL_PASSWORD: back_pw
+      MYSQL_ROOT_PASSWORD: root_pw
+      MYSQL_ROOT_HOST: '%'
+    ports:
+      - "8023:3306"
+    restart: always
+  gcc:
+    container_name: gcc
+    image: gcc:10
+    volumes:
+      - ./gcc/code:/code
+  python:
+    container_name: python
+    image: python:3
+  app:
+    container_name: back-java
+    image: openjdk:11-jdk
+    volumes:
+      - ./app:/usr/back
+    working_dir: /usr/back
+    command: ["./gradlew","bootrun"]
+    depends_on:
+      - mysql
+      - cache
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_LOCALE: environment
+      APP_FALLBACK_LOCALE: en
+      PMA_HOST: mysql
+      PMA_USER: back
+      PMA_PASSWORD: root
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_DATABASE: mysql_db
+      DB_USERNAME: back
+      DB_PASSWORD: back_pw
+    restart: always
+    networks:
+      default:
+        aliases:
+          - api.back
+  cache:
+    image: memcached
+networks:
+  default:
+    external:
+      name: net-group
+

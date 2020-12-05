@@ -1,0 +1,39 @@
+version: "3"
+services:
+  php:
+    container_name: front-php
+    build:
+      context: ./php
+      dockerfile: dockerfile
+      args:
+        - WITH_XDBUG=false
+    working_dir: /var/www/html
+    volumes:
+      - ./php/conf.d/timezone.ini:/usr/local/etc/php/conf.d/timezone.ini
+      - ./www:/var/www/html
+    command: ["bash","-c","php-fpm"]
+    restart: always
+  web:
+    container_name: front-nginx
+    image: nginx:latest
+    command: ["nginx","-g","daemon off;"]
+    depends_on:
+      - php
+    volumes:
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
+      - ./www:/var/www/html
+      - ./nginx/log:/var/log/nginx
+    ports:
+      - "8010:10"
+      - "8011:100"
+    links:
+      - php
+    restart: always
+    networks:
+      default:
+        aliases:
+          - api.front
+networks:
+  default:
+    external:
+      name: net-group
